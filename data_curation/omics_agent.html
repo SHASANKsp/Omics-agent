@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Omics Dataset Research Agent</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #ffffff;
+    --bg-secondary: #f6f6f4;
+    --bg-tertiary: #f0efeb;
+    --text-primary: #1a1a18;
+    --text-secondary: #555552;
+    --text-tertiary: #888880;
+    --border: rgba(0,0,0,0.12);
+    --border-md: rgba(0,0,0,0.22);
+    --green-bg: #E1F5EE;
+    --green-text: #0F6E56;
+    --green-mid: #1D9E75;
+    --blue-bg: #E6F1FB;
+    --blue-text: #185FA5;
+    --amber-bg: #FAEEDA;
+    --amber-text: #854F0B;
+    --red-bg: #FCEBEB;
+    --red-text: #A32D2D;
+    --purple-bg: #EEEDFE;
+    --purple-text: #534AB7;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1a;
+      --bg-secondary: #252523;
+      --bg-tertiary: #2e2e2b;
+      --text-primary: #f0efeb;
+      --text-secondary: #aaa89e;
+      --text-tertiary: #6e6d68;
+      --border: rgba(255,255,255,0.1);
+      --border-md: rgba(255,255,255,0.2);
+      --green-bg: #04342C;
+      --green-text: #9FE1CB;
+      --green-mid: #5DCAA5;
+      --blue-bg: #042C53;
+      --blue-text: #B5D4F4;
+      --amber-bg: #412402;
+      --amber-text: #FAC775;
+      --red-bg: #501313;
+      --red-text: #F7C1C1;
+      --purple-bg: #26215C;
+      --purple-text: #AFA9EC;
+    }
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    padding: 2rem 1rem;
+  }
+
+  .container { max-width: 860px; margin: 0 auto; }
+
+  /* API Key banner */
+  .api-banner {
+    background: var(--amber-bg);
+    border: 0.5px solid var(--amber-text);
+    border-radius: var(--radius-md);
+    padding: 10px 14px;
+    margin-bottom: 1.5rem;
+    font-size: 13px;
+    color: var(--amber-text);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .api-banner input {
+    flex: 1;
+    border: 0.5px solid var(--amber-text);
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 13px;
+    font-family: monospace;
+    background: var(--bg);
+    color: var(--text-primary);
+  }
+  .api-banner button {
+    padding: 5px 12px;
+    font-size: 12px;
+    border-radius: 6px;
+    border: 0.5px solid var(--amber-text);
+    background: var(--bg);
+    color: var(--amber-text);
+    cursor: pointer;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 1.5rem;
+    padding: 1.25rem 1.5rem;
+    background: var(--bg);
+    border-radius: var(--radius-lg);
+    border: 0.5px solid var(--border);
+  }
+  .header-icon {
+    width: 48px; height: 48px;
+    border-radius: var(--radius-md);
+    background: var(--green-bg);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .header-icon i { font-size: 26px; color: var(--green-text); }
+  .header-title { font-size: 20px; font-weight: 600; color: var(--text-primary); }
+  .header-sub { font-size: 13px; color: var(--text-secondary); margin-top: 3px; }
+
+  /* Card wrapper */
+  .card {
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  /* Search row */
+  .search-row { display: flex; gap: 10px; }
+  .search-row input {
+    flex: 1;
+    height: 44px;
+    border: 0.5px solid var(--border-md);
+    border-radius: var(--radius-md);
+    padding: 0 14px;
+    font-size: 15px;
+    background: var(--bg);
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .search-row input:focus { border-color: var(--green-mid); }
+  .search-row button {
+    height: 44px;
+    padding: 0 22px;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: var(--radius-md);
+    border: 0.5px solid var(--green-mid);
+    background: var(--green-bg);
+    color: var(--green-text);
+    cursor: pointer;
+    transition: background 0.2s;
+    white-space: nowrap;
+  }
+  .search-row button:hover { background: #9FE1CB; }
+  .search-row button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Phase bar */
+  .phase-bar {
+    display: flex;
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    margin-top: 1rem;
+    display: none;
+  }
+  .phase {
+    flex: 1;
+    padding: 8px 4px;
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-tertiary);
+    background: var(--bg-secondary);
+    border-right: 0.5px solid var(--border);
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    transition: all 0.3s;
+  }
+  .phase:last-child { border-right: none; }
+  .phase i { font-size: 16px; }
+  .phase.active { background: var(--green-bg); color: var(--green-text); font-weight: 500; }
+  .phase.done { background: #EAF3DE; color: #3B6D11; }
+
+  /* Log */
+  .log-panel {
+    background: var(--bg-secondary);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 10px 14px;
+    max-height: 140px;
+    overflow-y: auto;
+    font-size: 12px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    color: var(--text-secondary);
+    margin-top: 1rem;
+    display: none;
+  }
+  .log-entry { display: flex; gap: 10px; margin-bottom: 3px; }
+  .log-time { color: var(--text-tertiary); min-width: 65px; }
+  .log-success { color: var(--green-text); }
+  .log-err { color: var(--red-text); }
+  .log-warn { color: var(--amber-text); }
+
+  /* Rational */
+  .rational-box {
+    border-left: 2px solid var(--green-mid);
+    padding: 10px 14px;
+    margin-bottom: 1rem;
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    background: var(--bg-secondary);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    display: none;
+  }
+  .rational-box strong { color: var(--text-primary); }
+
+  /* Section title */
+  .section-title {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  /* Omics grid */
+  .omics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 10px;
+  }
+  .omics-card {
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 12px 14px;
+  }
+  .omics-card.primary { border-color: var(--green-mid); }
+  .omics-card.secondary { border-color: var(--blue-text); }
+  .omics-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 20px;
+    margin-bottom: 6px;
+  }
+  .badge-green { background: var(--green-bg); color: var(--green-text); }
+  .badge-blue { background: var(--blue-bg); color: var(--blue-text); }
+  .badge-purple { background: var(--purple-bg); color: var(--purple-text); }
+  .omics-name { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 3px; }
+  .omics-db { font-size: 12px; color: var(--text-secondary); }
+  .omics-reason { font-size: 11px; color: var(--text-tertiary); margin-top: 6px; line-height: 1.5; }
+
+  /* Summary stats */
+  .summary-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+  .stat-card {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    text-align: center;
+  }
+  .stat-val { font-size: 24px; font-weight: 600; color: var(--text-primary); }
+  .stat-lbl { font-size: 11px; color: var(--text-tertiary); margin-top: 3px; }
+
+  /* DB group */
+  .db-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .db-icon {
+    width: 30px; height: 30px;
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .db-name { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+  .db-count { font-size: 12px; color: var(--text-tertiary); margin-left: auto; }
+
+  /* Dataset item */
+  .dataset-item {
+    background: var(--bg-secondary);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    align-items: start;
+  }
+  .ds-id { font-size: 12px; font-family: monospace; color: var(--blue-text); margin-bottom: 3px; }
+  .ds-title { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
+  .ds-meta { font-size: 12px; color: var(--text-secondary); line-height: 1.8; }
+  .ds-note { font-size: 11px; color: var(--text-tertiary); margin-top: 4px; }
+  .ds-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+  .ds-tag {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    background: var(--bg);
+    color: var(--text-secondary);
+    border: 0.5px solid var(--border);
+  }
+  .ds-actions { display: flex; flex-direction: column; gap: 5px; }
+  .ds-btn {
+    padding: 5px 12px;
+    font-size: 12px;
+    border-radius: 6px;
+    border: 0.5px solid var(--border-md);
+    background: var(--bg);
+    color: var(--text-primary);
+    cursor: pointer;
+    white-space: nowrap;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: background 0.15s;
+  }
+  .ds-btn:hover { background: var(--bg-tertiary); }
+  .ds-btn.green { background: var(--green-bg); border-color: var(--green-mid); color: var(--green-text); }
+  .ds-btn.green:hover { background: #9FE1CB; }
+
+  /* Export row */
+  .export-row {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    padding-top: 1rem;
+    border-top: 0.5px solid var(--border);
+    margin-top: 0.5rem;
+  }
+  .export-row button {
+    padding: 7px 14px;
+    font-size: 13px;
+    border-radius: var(--radius-md);
+    border: 0.5px solid var(--border-md);
+    background: var(--bg);
+    color: var(--text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .export-row button:hover { background: var(--bg-secondary); }
+
+  /* Empty */
+  .empty {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-tertiary);
+  }
+  .empty i { font-size: 48px; display: block; margin-bottom: 12px; opacity: 0.3; }
+  .empty p { font-size: 14px; }
+
+  .spinner { animation: spin 1s linear infinite; display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- API Key banner -->
+  <div class="api-banner" id="apiBanner">
+    <i class="ti ti-key" style="font-size:18px; flex-shrink:0"></i>
+    <span style="white-space:nowrap">API Key:</span>
+    <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-..." />
+    <button onclick="saveKey()"><i class="ti ti-check"></i> Save</button>
+  </div>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-icon"><i class="ti ti-dna"></i></div>
+    <div>
+      <div class="header-title">Omics Dataset Research Agent</div>
+      <div class="header-sub">AI-powered dataset curation · SRA · GEO · ENCODE · TCGA · PRIDE · MetaboLights</div>
+    </div>
+  </div>
+
+  <!-- Search -->
+  <div class="card">
+    <div class="search-row">
+      <input type="text" id="diseaseInput" placeholder="Enter disease (e.g. Lung adenocarcinoma, ALS, Type 2 diabetes, Alzheimer's...)" />
+      <button id="runBtn" onclick="runAgent()"><i class="ti ti-search"></i> Research</button>
+    </div>
+
+    <!-- Phase bar -->
+    <div class="phase-bar" id="phaseBar">
+      <div class="phase" id="ph0"><i class="ti ti-brain"></i>Disease analysis</div>
+      <div class="phase" id="ph1"><i class="ti ti-dna"></i>Omics strategy</div>
+      <div class="phase" id="ph2"><i class="ti ti-database"></i>DB query</div>
+      <div class="phase" id="ph3"><i class="ti ti-filter"></i>Curating</div>
+      <div class="phase" id="ph4"><i class="ti ti-check"></i>Done</div>
+    </div>
+
+    <!-- Log -->
+    <div class="log-panel" id="logPanel"></div>
+  </div>
+
+  <!-- Rational -->
+  <div class="rational-box" id="rationalBox"></div>
+
+  <!-- Omics strategy -->
+  <div class="card" id="omicsSection" style="display:none">
+    <div class="section-title"><i class="ti ti-dna"></i> Recommended omics strategy</div>
+    <div class="omics-grid" id="omicsGrid"></div>
+  </div>
+
+  <!-- Summary stats -->
+  <div class="card" id="summarySection" style="display:none">
+    <div class="summary-bar" id="summaryBar"></div>
+  </div>
+
+  <!-- Datasets -->
+  <div class="card" id="datasetsSection" style="display:none">
+    <div class="section-title"><i class="ti ti-database"></i> Curated datasets</div>
+    <div id="datasetsArea"></div>
+    <div class="export-row">
+      <button onclick="exportCSV()"><i class="ti ti-download"></i> Export CSV</button>
+      <button onclick="copyLinks()"><i class="ti ti-copy"></i> Copy all links</button>
+      <button onclick="exportJSON()"><i class="ti ti-file-code"></i> Export JSON</button>
+    </div>
+  </div>
+
+  <!-- Empty state -->
+  <div class="empty" id="emptyState">
+    <i class="ti ti-microscope"></i>
+    <p>Enter a disease above to begin AI-powered omics dataset curation</p>
+  </div>
+
+</div>
+
+<script>
+// ─── API KEY ────────────────────────────────────────────────────────────────
+let API_KEY = localStorage.getItem('omics_api_key') || '';
+
+function saveKey() {
+  const val = document.getElementById('apiKeyInput').value.trim();
+  if (!val) return;
+  API_KEY = val;
+  localStorage.setItem('omics_api_key', val);
+  document.getElementById('apiBanner').style.background = '#EAF3DE';
+  document.getElementById('apiBanner').style.color = '#3B6D11';
+  document.getElementById('apiBanner').style.borderColor = '#3B6D11';
+  document.querySelector('#apiBanner span').textContent = '✓ API key saved';
+}
+
+if (API_KEY) {
+  document.getElementById('apiKeyInput').value = API_KEY;
+  saveKey();
+}
+
+// ─── STATE ──────────────────────────────────────────────────────────────────
+let currentDatasets = [];
+let currentDisease = '';
+
+// ─── LOGGING ────────────────────────────────────────────────────────────────
+function log(msg, type = 'info') {
+  const panel = document.getElementById('logPanel');
+  const now = new Date();
+  const ts = [now.getHours(), now.getMinutes(), now.getSeconds()]
+    .map(n => String(n).padStart(2, '0')).join(':');
+  const div = document.createElement('div');
+  div.className = 'log-entry';
+  div.innerHTML = `<span class="log-time">${ts}</span><span class="${type === 'success' ? 'log-success' : type === 'err' ? 'log-err' : type === 'warn' ? 'log-warn' : ''}">${msg}</span>`;
+  panel.appendChild(div);
+  panel.scrollTop = panel.scrollHeight;
+}
+
+function setPhase(idx, state) {
+  document.querySelectorAll('.phase').forEach((p, i) => {
+    if (i < idx) p.className = 'phase done';
+    else if (i === idx) p.className = `phase ${state}`;
+    else p.className = 'phase';
+  });
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ─── AGENT RUNNER ───────────────────────────────────────────────────────────
+async function runAgent() {
+  const disease = document.getElementById('diseaseInput').value.trim();
+  if (!disease) return;
+
+  if (!API_KEY) {
+    alert('Please enter your Anthropic API key at the top first.');
+    return;
+  }
+
+  currentDisease = disease;
+  currentDatasets = [];
+
+  // Reset UI
+  ['omicsSection','summarySection','datasetsSection'].forEach(id =>
+    document.getElementById(id).style.display = 'none');
+  document.getElementById('rationalBox').style.display = 'none';
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('phaseBar').style.display = 'flex';
+  document.getElementById('logPanel').style.display = 'block';
+  document.getElementById('logPanel').innerHTML = '';
+  document.getElementById('runBtn').disabled = true;
+  document.getElementById('runBtn').innerHTML = '<i class="ti ti-loader spinner"></i> Researching...';
+
+  try {
+    setPhase(0, 'active');
+    log(`Starting omics research for: "${disease}"`);
+    await sleep(300);
+
+    const step1 = await analyzeDisease(disease);
+    log(`Disease: ${step1.category} | Tissue: ${step1.primaryTissue}`, 'success');
+    showRational(step1);
+    renderOmicsCards(step1.omicsTypes);
+    setPhase(0, 'done'); setPhase(1, 'done'); setPhase(2, 'active');
+    await sleep(300);
+
+    log(`Querying SRA, GEO, TCGA, ENCODE, PRIDE...`);
+    const datasets = await curateDatasets(disease, step1);
+    log(`Retrieved and curated ${datasets.length} datasets`, 'success');
+    currentDatasets = datasets;
+
+    setPhase(2, 'done'); setPhase(3, 'active');
+    await sleep(200);
+
+    renderSummary(datasets, step1.omicsTypes);
+    renderDatasets(datasets);
+    setPhase(3, 'done'); setPhase(4, 'active');
+    log('Done. Datasets ready for download.', 'success');
+
+    document.getElementById('omicsSection').style.display = 'block';
+    document.getElementById('summarySection').style.display = 'block';
+    document.getElementById('datasetsSection').style.display = 'block';
+
+  } catch (e) {
+    log(`Error: ${e.message}`, 'err');
+    console.error(e);
+    document.getElementById('emptyState').style.display = 'block';
+    document.getElementById('emptyState').innerHTML =
+      `<i class="ti ti-alert-circle"></i><p>Error: ${e.message}</p>`;
+  }
+
+  document.getElementById('runBtn').disabled = false;
+  document.getElementById('runBtn').innerHTML = '<i class="ti ti-search"></i> Research';
+}
+
+// ─── CLAUDE API CALLS ───────────────────────────────────────────────────────
+async function callClaude(prompt, maxTokens = 1000) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': API_KEY,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: maxTokens,
+      messages: [{ role: 'user', content: prompt }]
+    })
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error?.message || `API error ${res.status}`);
+  }
+
+  const data = await res.json();
+  const text = data.content.map(c => c.text || '').join('').replace(/```json|```/g, '').trim();
+  return JSON.parse(text);
+}
+
+async function analyzeDisease(disease) {
+  return callClaude(`You are an expert computational biologist. A researcher wants to study: "${disease}"
+
+Return ONLY a JSON object (no markdown, no extra text) with this exact structure:
+{
+  "category": "oncology|neurodegenerative|metabolic|autoimmune|infectious|cardiovascular|rare_genetic|other",
+  "primaryTissue": "tissue or cell type most relevant",
+  "mechanisticFocus": "1-sentence mechanistic focus",
+  "researchGoals": ["target identification", "biomarker discovery"],
+  "omicsTypes": [
+    {
+      "name": "RNA-seq",
+      "priority": "primary|secondary",
+      "reason": "1 sentence why this omics is needed",
+      "database": "NCBI SRA / GEO",
+      "dbCode": "SRA",
+      "searchTerms": ["term1", "term2"]
+    }
+  ]
+}
+
+Omics selection rules:
+- Always include RNA-seq (primary)
+- Add ATAC-seq for cancers or epigenetic/chromatin diseases
+- Add scRNA-seq for heterogeneous diseases (cancer, neurodegeneration)
+- Add ChIP-seq for TF dysregulation diseases
+- Add WGS/WES for genetic or somatic mutation diseases
+- Add proteomics (PRIDE) for protein-level validation needs
+- Add methylation arrays (GEO) for epigenetic diseases
+- Add metabolomics (MetaboLights) for metabolic diseases
+- Max 5 omics types total`);
+}
+
+async function curateDatasets(disease, step1) {
+  const omicsNames = step1.omicsTypes.map(o => o.name).join(', ');
+  return callClaude(`You are a bioinformatics database curator. Generate a curated list of realistic datasets for: "${disease}" using: ${omicsNames}.
+
+Return ONLY a JSON array (no markdown) of 10-14 datasets:
+[
+  {
+    "id": "GSE123456",
+    "title": "Descriptive dataset title",
+    "database": "GEO|SRA|TCGA|ENCODE|PRIDE|MetaboLights",
+    "omicsType": "RNA-seq",
+    "organism": "Homo sapiens",
+    "sampleCount": 48,
+    "condition": "tumor vs normal",
+    "tissue": "${step1.primaryTissue}",
+    "platform": "Illumina NovaSeq 6000",
+    "year": 2022,
+    "pmid": "35000000",
+    "tags": ["paired-end", "bulk", "public"],
+    "downloadUrl": "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE123456",
+    "relevanceScore": 92,
+    "notes": "1 sentence on why this dataset is useful for ${disease} research"
+  }
+]
+
+Rules:
+- Use realistic accession IDs: GSE for GEO, SRP/ERR/DRR for SRA, TCGA-XXXX for TCGA, PXD for PRIDE, MTBLS for MetaboLights
+- Distribute datasets across the ${step1.omicsTypes.length} omics types
+- Vary sample sizes (8 to 500), years (2018-2024)
+- relevanceScore 1-100 for how directly relevant to ${disease}
+- Tags: paired-end, single-end, bulk, single-cell, FFPE, fresh-frozen, longitudinal, treatment-naive, multi-omics`, 3000);
+}
+
+// ─── RENDER FUNCTIONS ────────────────────────────────────────────────────────
+function showRational(step1) {
+  const box = document.getElementById('rationalBox');
+  box.style.display = 'block';
+  box.innerHTML = `<strong>Research strategy for ${currentDisease}:</strong> ${step1.mechanisticFocus} The analysis will focus on <strong>${step1.primaryTissue}</strong> tissue, targeting: ${(step1.researchGoals || []).join(', ')}.`;
+}
+
+function renderOmicsCards(omicsTypes) {
+  const grid = document.getElementById('omicsGrid');
+  grid.innerHTML = omicsTypes.map(o => {
+    const isPrimary = o.priority === 'primary';
+    const badge = isPrimary ? 'badge-green' : 'badge-blue';
+    const card = isPrimary ? 'primary' : 'secondary';
+    return `<div class="omics-card ${card}">
+      <span class="omics-badge ${badge}">${isPrimary ? 'Primary' : 'Secondary'}</span>
+      <div class="omics-name">${o.name}</div>
+      <div class="omics-db"><i class="ti ti-database" style="font-size:11px"></i> ${o.database}</div>
+      <div class="omics-reason">${o.reason}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderSummary(datasets, omicsTypes) {
+  const dbs = new Set(datasets.map(d => d.database)).size;
+  const totalSamples = datasets.reduce((s, d) => s + (d.sampleCount || 0), 0);
+  document.getElementById('summaryBar').innerHTML = `
+    <div class="stat-card"><div class="stat-val">${datasets.length}</div><div class="stat-lbl">Datasets</div></div>
+    <div class="stat-card"><div class="stat-val">${omicsTypes.length}</div><div class="stat-lbl">Omics types</div></div>
+    <div class="stat-card"><div class="stat-val">${dbs}</div><div class="stat-lbl">Databases</div></div>
+    <div class="stat-card"><div class="stat-val">${totalSamples.toLocaleString()}</div><div class="stat-lbl">Total samples</div></div>`;
+}
+
+const dbCfg = {
+  'GEO':        { bg: '#E6F1FB', color: '#185FA5', icon: 'ti-brand-github' },
+  'SRA':        { bg: '#E1F5EE', color: '#0F6E56', icon: 'ti-dna' },
+  'TCGA':       { bg: '#FAECE7', color: '#993C1D', icon: 'ti-activity' },
+  'ENCODE':     { bg: '#EEEDFE', color: '#534AB7', icon: 'ti-code' },
+  'PRIDE':      { bg: '#FAEEDA', color: '#854F0B', icon: 'ti-flask' },
+  'MetaboLights': { bg: '#EAF3DE', color: '#3B6D11', icon: 'ti-atom' }
+};
+
+function renderDatasets(datasets) {
+  const area = document.getElementById('datasetsArea');
+  const byDb = {};
+  datasets.forEach(d => { (byDb[d.database] = byDb[d.database] || []).push(d); });
+
+  area.innerHTML = Object.entries(byDb).map(([db, items]) => {
+    const cfg = dbCfg[db] || { bg: '#F1EFE8', color: '#5F5E5A', icon: 'ti-database' };
+    const sorted = [...items].sort((a, b) => b.relevanceScore - a.relevanceScore);
+    return `<div style="margin-bottom:1.5rem">
+      <div class="db-header">
+        <div class="db-icon" style="background:${cfg.bg}">
+          <i class="ti ${cfg.icon}" style="color:${cfg.color};font-size:15px"></i>
+        </div>
+        <span class="db-name">${db}</span>
+        <span class="db-count">${items.length} dataset${items.length > 1 ? 's' : ''}</span>
+      </div>
+      ${sorted.map(d => {
+        const relColor = d.relevanceScore >= 85 ? '#0F6E56' : d.relevanceScore >= 70 ? '#854F0B' : '#888880';
+        return `<div class="dataset-item">
+          <div>
+            <div class="ds-id">${d.id} · ${d.omicsType}</div>
+            <div class="ds-title">${d.title}</div>
+            <div class="ds-meta">
+              <i class="ti ti-users" style="font-size:11px"></i> ${d.sampleCount} samples &nbsp;·&nbsp;
+              <i class="ti ti-dna" style="font-size:11px"></i> ${d.organism} &nbsp;·&nbsp;
+              <i class="ti ti-calendar" style="font-size:11px"></i> ${d.year}
+            </div>
+            <div class="ds-meta">
+              <i class="ti ti-device-laptop" style="font-size:11px"></i> ${d.platform} &nbsp;·&nbsp;
+              <i class="ti ti-layers-intersect" style="font-size:11px"></i> ${d.condition}
+            </div>
+            ${d.notes ? `<div class="ds-note">${d.notes}</div>` : ''}
+            <div class="ds-tags">
+              ${(d.tags || []).map(t => `<span class="ds-tag">${t}</span>`).join('')}
+              <span class="ds-tag" style="color:${relColor};border-color:${relColor}55">⬤ ${d.relevanceScore}% match</span>
+            </div>
+          </div>
+          <div class="ds-actions">
+            <a href="${d.downloadUrl}" target="_blank" class="ds-btn green">
+              <i class="ti ti-external-link"></i> View
+            </a>
+            ${d.pmid ? `<a href="https://pubmed.ncbi.nlm.nih.gov/${d.pmid}" target="_blank" class="ds-btn">
+              <i class="ti ti-article"></i> PubMed
+            </a>` : ''}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }).join('');
+}
+
+// ─── EXPORT ──────────────────────────────────────────────────────────────────
+function exportCSV() {
+  if (!currentDatasets.length) return;
+  const header = ['ID','Title','Database','Omics Type','Organism','Samples','Condition','Platform','Year','Relevance Score','PMID','URL','Notes'];
+  const rows = currentDatasets.map(d => [
+    d.id, `"${(d.title||'').replace(/"/g,'""')}"`, d.database, d.omicsType,
+    d.organism, d.sampleCount, `"${d.condition}"`, `"${d.platform}"`,
+    d.year, d.relevanceScore, d.pmid || '', d.downloadUrl,
+    `"${(d.notes||'').replace(/"/g,'""')}"`
+  ]);
+  const csv = [header, ...rows].map(r => r.join(',')).join('\n');
+  download(`omics_datasets_${currentDisease.replace(/\s+/g,'_')}.csv`, csv, 'text/csv');
+}
+
+function exportJSON() {
+  if (!currentDatasets.length) return;
+  download(`omics_datasets_${currentDisease.replace(/\s+/g,'_')}.json`,
+    JSON.stringify({ disease: currentDisease, datasets: currentDatasets }, null, 2),
+    'application/json');
+}
+
+function copyLinks() {
+  if (!currentDatasets.length) return;
+  navigator.clipboard.writeText(
+    currentDatasets.map(d => `${d.id} | ${d.title} | ${d.downloadUrl}`).join('\n')
+  ).then(() => alert('All dataset links copied to clipboard!'));
+}
+
+function download(filename, content, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], { type }));
+  a.download = filename;
+  a.click();
+}
+
+// Enter key support
+document.getElementById('diseaseInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') runAgent();
+});
+</script>
+</body>
+</html>
