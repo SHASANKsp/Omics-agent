@@ -1,0 +1,109 @@
+# ─────────────────────────────────────────────────────────────
+#  pipeline_config.yaml
+#  Single source of truth for all pipeline settings.
+#  Edit paths here — all scripts read from this file.
+# ─────────────────────────────────────────────────────────────
+
+# ── Docker ───────────────────────────────────────────────────
+docker:
+  image_name: omics-pipeline          # name given to the built image
+  image_tag:  "1.0"
+  # Full image reference used at runtime
+  image: "omics-pipeline:1.0"
+
+# ── Directory layout ─────────────────────────────────────────
+paths:
+  # Root of your project — all relative paths resolve from here
+  project_root:   "."
+
+  # Where omics_agent.py writes its output
+  curation_out:   "omics_results"
+
+  # Where geo_downloader.py writes GEO metadata + SRA manifests
+  geo_out:        "geo_downloads"
+
+  # Where raw FASTQ files land during download (deleted after processing)
+  fastq_tmp:      "tmp/fastq"
+
+  # Where processed output goes (count matrices, QC reports, logs)
+  processed_out:  "processed"
+
+  # Reference genome directory (built once by reference_setup.py)
+  references:     "references"
+
+# ── Reference genome ─────────────────────────────────────────
+reference:
+  # Ensembl release — change to update genome version
+  ensembl_release: 111
+  species:         "homo_sapiens"
+  assembly:        "GRCh38"
+
+  # These paths are relative to paths.references
+  # They are filled in automatically by reference_setup.py
+  genome_fasta:    "GRCh38/Homo_sapiens.GRCh38.dna.primary_assembly.fa"
+  gtf:             "GRCh38/Homo_sapiens.GRCh38.111.gtf"
+  star_index:      "star_index"
+  hisat2_index:    "hisat2_index/genome"
+  bismark_index:   "bismark_index"
+
+# ── Processing parameters ────────────────────────────────────
+processing:
+  threads: 8              # CPU threads for STAR, HISAT2, featureCounts
+  keep_bam: false         # delete BAM after counting (saves ~5 GB/sample)
+  keep_fastq: false       # delete FASTQ after alignment (saves ~5 GB/sample)
+
+  # fastp QC thresholds
+  fastp:
+    min_length:        20
+    qualified_quality: 15
+    unqualified_percent_limit: 40
+
+  # STAR (bulk RNA-seq alignment)
+  star:
+    extra_args: "--outSAMtype BAM SortedByCoordinate --outSAMattributes NH HI AS NM"
+
+  # STARsolo (scRNA-seq)
+  starsolo:
+    # 10x Chromium v3 whitelist — bundled with STAR install
+    # Change to v2 whitelist path for older 10x libraries
+    whitelist:   "3M-february-2018.txt"
+    cell_barcode_length: 16
+    umi_length:          12
+
+  # HISAT2 (ATAC-seq / ChIP-seq)
+  hisat2:
+    extra_args: "--no-spliced-alignment"   # ATAC/ChIP don't need splice-awareness
+
+  # MACS3 (peak calling)
+  macs3:
+    genome_size: "hs"          # human effective genome size
+    fdr:         0.05
+    # For ATAC-seq use --nomodel --shift -100 --extsize 200
+    atac_extra:  "--nomodel --shift -100 --extsize 200"
+    # For ChIP-seq use default model
+    chip_extra:  ""
+
+  # featureCounts (read counting)
+  featurecounts:
+    feature_type: "exon"
+    attribute:    "gene_id"
+    # -p for paired-end; removed for single-end automatically by processor.py
+    extra_args:   "-p --countReadPairs"
+
+  # Bismark (methylation)
+  bismark:
+    extra_args: ""
+
+# ── SRA download ──────────────────────────────────────────────
+sra:
+  # Max parallel prefetch jobs
+  parallel_downloads: 2
+  # prefetch cache inside container (mapped from host tmp dir)
+  cache_dir: "/tmp/sra_cache"
+  # fasterq-dump thread count
+  fasterq_threads: 8
+
+# ── Logging ───────────────────────────────────────────────────
+logging:
+  level: "INFO"          # DEBUG | INFO | WARNING | ERROR
+  log_file: "pipeline.log"
